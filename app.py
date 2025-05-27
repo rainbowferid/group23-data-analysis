@@ -101,7 +101,26 @@ def get_playload_data(conn):
 def get_playlike_data(conn):
     cursor = conn.cursor()
     cursor.execute("SELECT 播放量, 点赞量, 收藏量, 视频名称 FROM rank_all")
-    data = [dict(row) for row in cursor.fetchall()]
+    data = []
+
+    for row in cursor.fetchall():
+        item = dict(row)
+
+        # 处理点赞量字段
+        likes = item['点赞量']
+        if likes.endswith('万'):
+            item['点赞量'] = int(float(likes[:-1]) * 10000)
+        else:
+            item['点赞量'] = int(likes)
+
+        # 处理收藏量字段（逻辑与点赞量相同）
+        favorites = item['收藏量']
+        if favorites.endswith('万'):
+            item['收藏量'] = int(float(favorites[:-1]) * 10000)
+        else:
+            item['收藏量'] = int(favorites)
+
+        data.append(item)
 
     return jsonify({
         "data": data,
