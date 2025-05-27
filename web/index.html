@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B站数据可视化</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FB7299',
+                        secondary: '#23ADE5',
+                        dark: '#18191C',
+                        light: '#F8F9FA'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            }
+            .gradient-bg {
+                background: linear-gradient(135deg, #FB7299 0%, #23ADE5 100%);
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-inter text-dark">
+    <!-- 导航栏 -->
+    <header class="sticky top-0 z-50 bg-white shadow-md transition-all duration-300">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-line-chart text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold bg-clip-text text-transparent gradient-bg">B站数据可视化</h1>
+            </div>
+            <nav>
+                <ul class="flex space-x-6">
+                    <li><a href="#rank" class="text-gray-700 hover:text-primary transition-colors duration-200">排行榜</a></li>
+                    <li><a href="#playload" class="text-gray-700 hover:text-primary transition-colors duration-200">播放弹幕分析</a></li>
+                    <li><a href="#playlike" class="text-gray-700 hover:text-primary transition-colors duration-200">播放互动分析</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- 页面标题 -->
+        <div class="text-center mb-12">
+            <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold mb-4 bg-clip-text text-transparent gradient-bg">B站视频数据分析平台</h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">探索B站热门视频的播放量、弹幕量、点赞量和收藏量之间的关系，发现热门内容背后的趋势和模式。</p>
+        </div>
+
+        <!-- 数据概览卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div class="bg-white rounded-xl p-6 card-shadow hover:shadow-lg transition-all duration-300 border-l-4 border-primary">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">总视频数</p>
+                        <h3 class="text-3xl font-bold mt-1" id="total-videos">--</h3>
+                    </div>
+                    <div class="bg-primary/10 p-3 rounded-full">
+                        <i class="fa fa-video-camera text-primary text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 card-shadow hover:shadow-lg transition-all duration-300 border-l-4 border-secondary">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">平均播放量</p>
+                        <h3 class="text-3xl font-bold mt-1" id="avg-play">--</h3>
+                    </div>
+                    <div class="bg-secondary/10 p-3 rounded-full">
+                        <i class="fa fa-play-circle text-secondary text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 card-shadow hover:shadow-lg transition-all duration-300 border-l-4 border-purple-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">平均点赞量</p>
+                        <h3 class="text-3xl font-bold mt-1" id="avg-like">--</h3>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-full">
+                        <i class="fa fa-thumbs-up text-purple-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 排行榜部分 -->
+        <section id="rank" class="mb-16">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold">视频排行榜</h3>
+                <div class="flex space-x-2">
+                    <button id="prev-page" class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fa fa-chevron-left"></i> 上一页
+                    </button>
+                    <button id="next-page" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+                        下一页 <i class="fa fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl overflow-hidden card-shadow">
+                <div class="overflow-x-auto scrollbar-hide">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-gray-50 text-left">
+                                <th class="px-6 py-4 font-semibold">排名</th>
+                                <th class="px-6 py-4 font-semibold">视频名称</th>
+                                <th class="px-6 py-4 font-semibold">UP主</th>
+                                <th class="px-6 py-4 font-semibold">发布时间</th>
+                                <th class="px-6 py-4 font-semibold">播放量</th>
+                                <th class="px-6 py-4 font-semibold">点赞量</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rank-table-body">
+                            <!-- 数据将通过JavaScript动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+                    <div class="text-sm text-gray-600">
+                        第 <span id="current-page">1</span> 页，共 <span id="total-pages">--</span> 页
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm text-gray-600">每页显示：</span>
+                        <select id="page-size" class="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                            <option value="10">10条</option>
+                            <option value="20">20条</option>
+                            <option value="50">50条</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 播放弹幕分析 -->
+        <section id="playload" class="mb-16">
+            <h3 class="text-2xl font-bold mb-6">播放量与弹幕量关系</h3>
+            <div class="bg-white rounded-xl p-4 card-shadow h-[500px]">
+                <div id="playload-chart" class="w-full h-full"></div>
+            </div>
+        </section>
+
+        <!-- 播放互动分析 -->
+        <section id="playlike" class="mb-16">
+            <h3 class="text-2xl font-bold mb-6">播放量、点赞量与收藏量关系</h3>
+            <div class="bg-white rounded-xl p-4 card-shadow h-[500px]">
+                <div id="playlike-chart" class="w-full h-full"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-dark text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa fa-line-chart text-primary text-xl"></i>
+                        <h2 class="text-xl font-bold">B站数据可视化</h2>
+                    </div>
+                    <p class="text-gray-400 mt-2">探索B站视频数据的可视化平台</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fa fa-github text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fa fa-twitter text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fa fa-linkedin text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-6 pt-6 text-center text-gray-400 text-sm">
+                &copy; 2025 B站数据可视化平台 | 本网站数据仅供演示使用
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // API基础URL，指向端口5000
+        const API_BASE_URL = 'http://localhost:5000';
+        
+        // 当前页码和每页显示数量
+        let currentPage = 1;
+        let pageSize = 10;
+        
+        // 初始化图表
+        const playloadChart = echarts.init(document.getElementById('playload-chart'));
+        const playlikeChart = echarts.init(document.getElementById('playlike-chart'));
+        
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', () => {
+            // 获取并展示排行榜数据
+            fetchRankList(currentPage, pageSize);
+            
+            // 获取并展示播放量与弹幕量关系图
+            fetchPlayloadData();
+            
+            // 获取并展示播放量、点赞量与收藏量关系图
+            fetchPlaylikeData();
+            
+            // 绑定分页按钮事件
+            document.getElementById('prev-page').addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    fetchRankList(currentPage, pageSize);
+                }
+            });
+            
+            document.getElementById('next-page').addEventListener('click', () => {
+                const totalPages = parseInt(document.getElementById('total-pages').textContent);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    fetchRankList(currentPage, pageSize);
+                }
+            });
+            
+            // 绑定每页显示数量变更事件
+            document.getElementById('page-size').addEventListener('change', (e) => {
+                pageSize = parseInt(e.target.value);
+                currentPage = 1; // 重置为第一页
+                fetchRankList(currentPage, pageSize);
+            });
+            
+            // 监听窗口大小变化，调整图表尺寸
+            window.addEventListener('resize', () => {
+                playloadChart.resize();
+                playlikeChart.resize();
+            });
+        });
+        
+        // 获取排行榜数据
+        function fetchRankList(page, limit) {
+            fetch(`${API_BASE_URL}/rankList?page=${page}&limit=${limit}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    renderRankList(data.data, page, data.pagination.total_pages, data.pagination.total_count);
+                    
+                    // 更新数据概览
+                    document.getElementById('total-videos').textContent = data.pagination.total_count.toLocaleString();
+                    
+                    // 计算平均播放量和点赞量
+                    if (data.data.length > 0) {
+                        const totalPlay = data.data.reduce((sum, video) => sum + parseInt(video.播放量)*10000, 0);
+                        const totalLike = data.data.reduce((sum, video) => sum + parseInt(video.点赞量)*10000, 0);
+                        
+                        document.getElementById('avg-play').textContent = Math.round(totalPlay / data.data.length).toLocaleString();
+                        document.getElementById('avg-like').textContent = Math.round(totalLike / data.data.length).toLocaleString();
+                    }
+                })
+                .catch(error => {
+                    console.error('获取排行榜数据失败:', error);
+                    alert('获取排行榜数据失败，请检查API连接');
+                });
+        }
+        
+        // 渲染排行榜列表
+        function renderRankList(data, page, totalPages, totalCount) {
+            const tableBody = document.getElementById('rank-table-body');
+            tableBody.innerHTML = '';
+            
+            // 计算排名起始值
+            const startRank = (page - 1) * pageSize + 1;
+            
+            data.forEach((video, index) => {
+                const rank = startRank + index;
+                const row = document.createElement('tr');
+                row.className = rank % 2 === 0 ? 'bg-gray-50' : 'bg-white';
+                row.innerHTML = `
+                    <td class="px-6 py-4">
+                        <div class="flex items-center">
+                            <span class="font-semibold ${rank <= 3 ? 'text-primary' : ''}">${rank}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center">
+                            <a href="${video.视频链接}" target="_blank" class="text-secondary hover:underline">${video.视频名称}</a>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">${video.UP主}</td>
+                    <td class="px-6 py-4">${video.发布时间}</td>
+                    <td class="px-6 py-4">${parseInt(video.播放量).toLocaleString()+'w'}</td>
+                    <td class="px-6 py-4">${parseInt(video.点赞量).toLocaleString()+'w'}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // 更新分页信息
+            document.getElementById('current-page').textContent = page;
+            document.getElementById('total-pages').textContent = totalPages;
+            
+            // 禁用/启用分页按钮
+            document.getElementById('prev-page').disabled = page === 1;
+            document.getElementById('next-page').disabled = page === totalPages;
+        }
+        
+        // 获取播放量与弹幕量关系数据
+        function fetchPlayloadData() {
+            fetch(`${API_BASE_URL}/playLoad`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    renderPlayloadChart(data);
+                })
+                .catch(error => {
+                    console.error('获取播放弹幕数据失败:', error);
+                    alert('获取播放弹幕数据失败，请检查API连接');
+                });
+        }
+        
+        // 渲染播放量与弹幕量关系图
+        function renderPlayloadChart(data) {
+            // 处理数据
+            const chartData = data.data.map(item => {
+                return [
+                    parseInt(item.播放量),
+                    parseInt(item.弹幕量),
+                    item.视频名称
+                ];
+            });
+            
+            // 配置图表选项
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        return `
+                            <div class="font-bold">${params.data[2]}</div>
+                            <div>播放量: ${parseInt(params.data[0]).toLocaleString()}</div>
+                            <div>弹幕量: ${parseInt(params.data[1]).toLocaleString()}</div>
+                        `;
+                    }
+                },
+                xAxis: {
+                    name: '播放量',
+                    type: 'value',
+                    scale: true,
+                    nameLocation: 'middle',
+                    nameGap: 25,
+                    axisLabel: {
+                        formatter: function(value) {
+                            if (value >= 10000) {
+                                return (value / 10000).toFixed(1) + '万';
+                            }
+                            return value;
+                        }
+                    }
+                },
+                yAxis: {
+                    name: '弹幕量',
+                    type: 'value',
+                    scale: true,
+                    nameLocation: 'middle',
+                    nameGap: 30,
+                    axisLabel: {
+                        formatter: function(value) {
+                            if (value >= 10000) {
+                                return (value / 10000).toFixed(1) + '万';
+                            }
+                            return value;
+                        }
+                    }
+                },
+                series: [{
+                    name: '视频',
+                    type: 'scatter',
+                    data: chartData,
+                    symbolSize: 10,
+                    itemStyle: {
+                        color: '#FB7299',
+                        opacity: 0.7
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            opacity: 1
+                        }
+                    }
+                }]
+            };
+            
+            // 设置图表选项
+            playloadChart.setOption(option);
+        }
+        
+        // 获取播放量、点赞量与收藏量关系数据
+        function fetchPlaylikeData() {
+            fetch(`${API_BASE_URL}/playLike`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    renderPlaylikeChart(data);
+                })
+                .catch(error => {
+                    console.error('获取播放互动数据失败:', error);
+                    alert('获取播放互动数据失败，请检查API连接');
+                });
+        }
+        
+        // 渲染播放量、点赞量与收藏量关系图
+        function renderPlaylikeChart(data) {
+            // 处理数据
+            const chartData = data.data.map(item => {
+                return [
+                    parseInt(item.播放量),
+                    parseInt(item.点赞量),
+                    parseInt(item.收藏量) / 100, // 缩小收藏量以控制气泡大小
+                    item.视频名称
+                ];
+            });
+            
+            // 配置图表选项
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        return `
+                            <div class="font-bold">${params.data[3]}</div>
+                            <div>播放量: ${parseInt(params.data[0]).toLocaleString()}</div>
+                            <div>点赞量: ${(params.data[1]).toLocaleString()}</div>
+                            <div>收藏量: ${(params.data[2] * 100).toLocaleString()}</div>
+                        `;
+                    }
+                },
+                xAxis: {
+                    name: '播放量',
+                    type: 'value',
+                    scale: true,
+                    nameLocation: 'middle',
+                    nameGap: 25,
+                    axisLabel: {
+                        formatter: function(value) {
+                            if (value >= 10000) {
+                                return (value / 10000).toFixed(1) + '万';
+                            }
+                            return value;
+                        }
+                    }
+                },
+                yAxis: {
+                    name: '点赞量',
+                    type: 'value',
+                    scale: true,
+                    nameLocation: 'middle',
+                    nameGap: 30,
+                    axisLabel: {
+                        formatter: function(value) {
+                            if (value >= 10000) {
+                                return (value / 10000).toFixed(1) + '万';
+                            }
+                            return value;
+                        }
+                    }
+                },
+                series: [{
+                    name: '视频',
+                    type: 'scatter',
+                    data: chartData,
+                    symbolSize: function(data) {
+                        return Math.max(5, data[2]); // 确保最小尺寸
+                    },
+                    itemStyle: {
+                        color: '#23ADE5',
+                        opacity: 0.7
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            opacity: 1
+                        }
+                    }
+                }]
+            };
+            
+            // 设置图表选项
+            playlikeChart.setOption(option);
+        }
+    </script>
+</body>
+</html>
+    
