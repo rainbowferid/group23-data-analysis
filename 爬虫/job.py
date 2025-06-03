@@ -15,7 +15,8 @@ data = {
     '收藏量': [],
     '弹幕量': [],
     '发布时间': [],
-    '标签': []
+    '标签': [],
+
 }
 
 df = pd.DataFrame(data)
@@ -72,6 +73,9 @@ with sync_playwright() as p:
         if (fav != None):
             fav = fav.text
 
+        print(info)
+        # duration = info.find(class_='bpx-player-ctrl-time-duration').text
+        # print(duration)
 
         tags = [tag.text for tag in info.find_all(class_='tag-link')]
         tags_text = ', '.join(tags)
@@ -89,12 +93,13 @@ with sync_playwright() as p:
             '收藏量': fav,
             '弹幕量': like_count,
             '发布时间': pub_date,
-            '标签': tags_text
+            '标签': tags_text,
+
         }
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
 
         # 只爬取一个视频用于测试
-        # break
+        break
 
     page.close()
 

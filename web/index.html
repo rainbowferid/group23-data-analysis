@@ -1,207 +1,935 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>B站数据可视化</title>
-    
-    <!-- 公共资源 -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind 主题配置 -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#FB7299',
-                        secondary: '#23ADE5',
-                        dark: '#18191C',
-                        light: '#F8F9FA'
-                    },
-                    fontFamily: {
-                        inter: ['Inter', 'sans-serif'],
-                    },
-                }
-            }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bilibili视频数据分析</title>
+  <!-- 引入Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入Font Awesome -->
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <!-- 引入ECharts -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <!-- Tailwind配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#FB7299', // B站粉色
+            secondary: '#23ADE5', // B站蓝色
+            dark: '#18191C',
+            light: '#F1F2F3',
+            bilibili: {
+                            pink: '#FB7299',      // B站粉色
+                            blue: '#23ADE5',      // B站蓝色
+                            dark: '#18191C',      // B站深色背景
+                            light: '#F4F4F4',     // B站浅色背景
+                            gray: '#999999',      // B站灰色文字
+                            border: '#E5E9EF'     // B站边框颜色
+                        }
+          },
+          
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  <style>
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
-    </script>
-    
-    <!-- 自定义样式 -->
-    <link rel="stylesheet" href="styles.css">
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        /* 骨架屏动画 */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+    </style>
+  <!-- 自定义工具类 -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .card-shadow {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+      .card-hover {
+        transition: all 0.3s ease;
+      }
+      .card-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+      }
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      
+      .content-auto {
+            content-visibility: auto;
+        }
+        .text-shadow {
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card-hover {
+            @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+        }
+        .bg-gradient-bilibili {
+            background: linear-gradient(135deg, #FB7299 0%, #23ADE5 100%);
+        }
+
+    }
+  </style>
 </head>
-<body class="bg-gray-50 font-inter text-dark">
-    <!-- 导航栏 -->
-    <header class="sticky top-0 z-50 bg-white shadow-md transition-all duration-300">
-        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-                <i class="fa fa-line-chart text-primary text-2xl"></i>
-                <h1 class="text-xl font-bold bg-clip-text text-transparent gradient-bg">B站数据可视化</h1>
-            </div>
-            <nav>
-                <ul class="flex space-x-6">
-                    <li><a href="#rank" class="text-gray-700 hover:text-primary transition-colors duration-200">排行榜</a></li>
-                    <li><a href="#playload" class="text-gray-700 hover:text-primary transition-colors duration-200">播放弹幕分析</a></li>
-                    <li><a href="#playlike" class="text-gray-700 hover:text-primary transition-colors duration-200">播放互动分析</a></li>
-                </ul>
-            </nav>
+<body class="bg-gray-50 font-sans text-gray-800">
+  <!-- 顶部导航 -->
+  <header class="sticky top-0 z-50 bg-white shadow-md transition-all duration-300">
+    <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-play-circle text-primary text-3xl"></i>
+        <h1 class="text-xl md:text-2xl font-bold text-dark">Bilibili<span class="text-primary">数据分析</span></h1>
+      </div>
+      <div class="flex items-center space-x-4">
+        <div class="relative hidden md:block">
+          <input id="search-input" type="text" placeholder="搜索视频或UP主..." 
+                 class="pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all w-64">
+          <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
         </div>
-    </header>
+        <button id="search-btn" class="md:hidden p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors">
+          <i class="fa fa-search text-gray-600"></i>
+        </button>
+      </div>
+    </div>
+  </header>
 
-    <main class="container mx-auto px-4 py-8">
-        <!-- 页面标题 -->
-        <div class="text-center mb-12">
-            <h2 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold mb-4 bg-clip-text text-transparent gradient-bg">B站视频数据分析平台</h2>
-            <p class="text-gray-600 max-w-2xl mx-auto">探索B站热门视频的播放量、弹幕量、点赞量和收藏量之间的关系，发现热门内容背后的趋势和模式。</p>
+  <!-- 移动端搜索框 -->
+  <div id="mobile-search" class="hidden bg-white px-4 py-2 border-b">
+    <div class="relative">
+      <input type="text" placeholder="搜索视频或UP主..." 
+             class="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+      <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+    </div>
+  </div>
+
+  <!-- 主内容区 -->
+  <main class="container mx-auto px-4 py-6">
+    <!-- 统计卡片 -->
+    <section class="mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl p-6 card-shadow card-hover">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 mb-1">总视频数</p>
+              <h3 id="total-videos" class="text-3xl font-bold text-dark">0</h3>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <i class="fa fa-film text-primary text-xl"></i>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center text-sm">
+            <span class="text-green-500 flex items-center">
+              <i class="fa fa-arrow-up mr-1"></i> 12.5%
+            </span>
+            <span class="text-gray-400 ml-2">较上周</span>
+          </div>
         </div>
-
-        <!-- 数据概览卡片 -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <div class="bg-white rounded-xl p-6 card-shadow hover:shadow-lg transition-all duration-300 border-l-4 border-primary">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm">总视频数</p>
-                        <h3 class="text-3xl font-bold mt-1" id="total-videos">--</h3>
-                    </div>
-                    <div class="bg-primary/10 p-3 rounded-full">
-                        <i class="fa fa-video-camera text-primary text-xl"></i>
-                    </div>
-                </div>
+        
+        <div class="bg-white rounded-xl p-6 card-shadow card-hover">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 mb-1">总播放量</p>
+              <h3 id="total-views" class="text-3xl font-bold text-dark">0</h3>
             </div>
-            <div class="bg-white rounded-xl p-6 card-shadow hover:shadow-lg transition-all duration-300 border-l-4 border-secondary">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm">平均播放量</p>
-                        <h3 class="text-3xl font-bold mt-1" id="avg-play">--</h3>
-                    </div>
-                    <div class="bg-secondary/10 p-3 rounded-full">
-                        <i class="fa fa-play-circle text-secondary text-xl"></i>
-                    </div>
-                </div>
+            <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center">
+              <i class="fa fa-eye text-secondary text-xl"></i>
             </div>
-            <div class="bg-white rounded-xl p-6 card-shadow hover:shadow-lg transition-all duration-300 border-l-4 border-purple-500">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm">平均点赞量</p>
-                        <h3 class="text-3xl font-bold mt-1" id="avg-like">--</h3>
-                    </div>
-                    <div class="bg-purple-100 p-3 rounded-full">
-                        <i class="fa fa-thumbs-up text-purple-500 text-xl"></i>
-                    </div>
-                </div>
-            </div>
+          </div>
+          <div class="mt-4 flex items-center text-sm">
+            <span class="text-green-500 flex items-center">
+              <i class="fa fa-arrow-up mr-1"></i> 8.2%
+            </span>
+            <span class="text-gray-400 ml-2">较上周</span>
+          </div>
         </div>
-
-        <!-- 排行榜部分 -->
-        <section id="rank" class="mb-16">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-bold">视频排行榜</h3>
-                <div class="flex space-x-2">
-                    <button id="prev-page" class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fa fa-chevron-left"></i> 上一页
-                    </button>
-                    <button id="next-page" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
-                        下一页 <i class="fa fa-chevron-right"></i>
-                    </button>
-                </div>
+        
+        <div class="bg-white rounded-xl p-6 card-shadow card-hover">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 mb-1">总点赞量</p>
+              <h3 id="total-likes" class="text-3xl font-bold text-dark">0</h3>
             </div>
+            <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+              <i class="fa fa-thumbs-up text-red-500 text-xl"></i>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center text-sm">
+            <span class="text-green-500 flex items-center">
+              <i class="fa fa-arrow-up mr-1"></i> 15.3%
+            </span>
+            <span class="text-gray-400 ml-2">较上周</span>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-6 card-shadow card-hover">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 mb-1">活跃UP主</p>
+              <h3 id="active-ups" class="text-3xl font-bold text-dark">0</h3>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+              <i class="fa fa-user-circle text-purple-500 text-xl"></i>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center text-sm">
+            <span class="text-green-500 flex items-center">
+              <i class="fa fa-arrow-up mr-1"></i> 7.8%
+            </span>
+            <span class="text-gray-400 ml-2">较上周</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
-            <div class="bg-white rounded-xl overflow-hidden card-shadow">
-                <div class="overflow-x-auto scrollbar-hide">
-                    <table class="w-full">
-                        <thead>
-                            <tr class="bg-gray-50 text-left">
-                                <th class="px-6 py-4 font-semibold">排名</th>
-                                <th class="px-6 py-4 font-semibold">视频名称</th>
-                                <th class="px-6 py-4 font-semibold">UP主</th>
-                                <th class="px-6 py-4 font-semibold">发布时间</th>
-                                <th class="px-6 py-4 font-semibold">播放量</th>
-                                <th class="px-6 py-4 font-semibold">点赞量</th>
-                            </tr>
-                        </thead>
-                        <tbody id="rank-table-body">
-                            <!-- 数据将通过JavaScript动态填充 -->
-                        </tbody>
-                    </table>
-                </div>
+    <!-- 图表区域 -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <!-- 播放量分布图表 -->
+      <div class="lg:col-span-2 bg-white rounded-xl p-6 card-shadow">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-dark">视频播放量分布</h2>
+          <div class="flex space-x-2">
+            <button class="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">全部</button>
+            <button class="px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 transition-colors">本周</button>
+            <button class="px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 transition-colors">本月</button>
+          </div>
+        </div>
+        <div class="h-80">
+          <div id="views-distribution" class="w-full h-full"></div>
+        </div>
+      </div>
+      
+      <!-- 发布时间分布图表 -->
+      <div class="bg-white rounded-xl p-6 card-shadow">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-dark">视频发布时间分布</h2>
+          <button class="text-gray-400 hover:text-gray-600">
+            <i class="fa fa-ellipsis-v"></i>
+          </button>
+        </div>
+        <div class="h-80">
+          <div id="time-distribution" class="w-full h-full"></div>
+        </div>
+      </div>
+    </section>
 
-                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
-                    <div class="text-sm text-gray-600">
-                        第 <span id="current-page">1</span> 页，共 <span id="total-pages">--</span> 页
+    <!-- 热门UP主和标签云 -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <!-- 热门UP主 -->
+      <div class="lg:col-span-1 bg-white rounded-xl p-6 card-shadow">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-dark">热门UP主</h2>
+          <button class="text-gray-400 hover:text-gray-600">
+            <i class="fa fa-refresh"></i>
+          </button>
+        </div>
+        <div id="top-ups" class="space-y-4">
+          <!-- 动态加载 -->
+        </div>
+      </div>
+      
+      <div class="lg:col-span-1 bg-white rounded-xl p-6 card-shadow">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-dark">热门UP主</h2>
+          <button class="text-gray-400 hover:text-gray-600">
+            <i class="fa fa-refresh"></i>
+          </button>
+        </div>
+        <div class="h-80" style="overflow: hidden;">
+            <div class="h-[450px] overflow-y-auto pr-2" id="tagRanking"><div class="flex items-center p-3 border-b border-bilibili-border last:border-b-0 transition-all hover:bg-gray-50">
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-white bg-bilibili-pink font-bold text-sm">
+                        1
                     </div>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-sm text-gray-600">每页显示：</span>
-                        <select id="page-size" class="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
-                            <option value="10">10条</option>
-                            <option value="20">20条</option>
-                            <option value="50">50条</option>
-                        </select>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <div class="font-medium"> 搞笑</div>
+                            <div class="text-bilibili-gray text-sm">15次</div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1.5">
+                            <div class="bg-gradient-to-r from-bilibili-pink to-bilibili-blue h-1.5 rounded-full" style="width: 100%"></div>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 播放弹幕分析 -->
-        <section id="playload" class="mb-16">
-            <h3 class="text-2xl font-bold mb-6">播放量与弹幕量关系</h3>
-            <div class="bg-white rounded-xl p-4 card-shadow h-[500px]">
-                <div id="playload-chart" class="w-full h-full"></div>
-            </div>
-        </section>
-
-        <!-- 播放互动分析 -->
-        <section id="playlike" class="mb-16">
-            <h3 class="text-2xl font-bold mb-6">播放量与互动量关系</h3>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white rounded-xl p-4 card-shadow h-[400px]">
-                    <h4 class="text-xl font-semibold mb-4 flex items-center">
-                        <i class="fa fa-thumbs-up text-primary mr-2"></i> 播放量与点赞量
-                    </h4>
-                    <div id="playlike-chart" class="w-full h-full"></div>
-                </div>
-                <div class="bg-white rounded-xl p-4 card-shadow h-[400px]">
-                    <h4 class="text-xl font-semibold mb-4 flex items-center">
-                        <i class="fa fa-bookmark text-secondary mr-2"></i> 播放量与收藏量
-                    </h4>
-                    <div id="playcollect-chart" class="w-full h-full"></div>
-                </div>
-            </div>
-        </section>
-
-        <section class="mb-16">
-                <h3 class="text-2xl font-bold mb-6">词云图</h3>
-                <div class="bg-white rounded-xl overflow-hidden card-shadow">
-                    <img id="featured-image" style="height: 20%;" src="./myplot.png" alt="词云图" class="w-full h-[400px] object-cover">
-                </div>
-            </section>
-    </main>
-    
-    <footer class="bg-dark text-white py-8">
-        <div class="container mx-auto px-4">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="mb-4 md:mb-0">
-                    <div class="flex items-center space-x-2">
-                        <i class="fa fa-line-chart text-primary text-xl"></i>
-                        <h2 class="text-xl font-bold">B站数据可视化</h2>
+                </div><div class="flex items-center p-3 border-b border-bilibili-border last:border-b-0 transition-all hover:bg-gray-50">
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-white bg-orange-400 font-bold text-sm">
+                        2
                     </div>
-                    <p class="text-gray-400 mt-2">B站视频数据的可视化平台</p>
-                </div>
-                
-            </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <div class="font-medium"> 生活记录</div>
+                            <div class="text-bilibili-gray text-sm">7次</div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1.5">
+                            <div class="bg-gradient-to-r from-bilibili-pink to-bilibili-blue h-1.5 rounded-full" style="width: 46.666666666666664%"></div>
+                        </div>
+                    </div>
+                </div><div class="flex items-center p-3 border-b border-bilibili-border last:border-b-0 transition-all hover:bg-gray-50">
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-white bg-yellow-400 font-bold text-sm">
+                        3
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <div class="font-medium"> 沙雕</div>
+                            <div class="text-bilibili-gray text-sm">5次</div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1.5">
+                            <div class="bg-gradient-to-r from-bilibili-pink to-bilibili-blue h-1.5 rounded-full" style="width: 33.33333333333333%"></div>
+                        </div>
+                    </div>
+                </div><div class="flex items-center p-3 border-b border-bilibili-border last:border-b-0 transition-all hover:bg-gray-50">
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-white bg-gray-200 font-bold text-sm">
+                        4
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <div class="font-medium"> 娱乐</div>
+                            <div class="text-bilibili-gray text-sm">5次</div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1.5">
+                            <div class="bg-gradient-to-r from-bilibili-pink to-bilibili-blue h-1.5 rounded-full" style="width: 33.33333333333333%"></div>
+                        </div>
+                    </div>
+                </div><div class="flex items-center p-3 border-b border-bilibili-border last:border-b-0 transition-all hover:bg-gray-50">
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-white bg-gray-200 font-bold text-sm">
+                        5
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <div class="font-medium"> 高能</div>
+                            <div class="text-bilibili-gray text-sm">5次</div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1.5">
+                            <div class="bg-gradient-to-r from-bilibili-pink to-bilibili-blue h-1.5 rounded-full" style="width: 33.33333333333333%"></div>
+                        </div>
+                    </div>
+                </div><div class="flex items-center p-3 border-b border-bilibili-border last:border-b-0 transition-all hover:bg-gray-50">
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-white bg-gray-200 font-bold text-sm">
+                        6
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <div class="font-medium"> 游戏解说</div>
+                            <div class="text-bilibili-gray text-sm">5次</div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1.5">
+                            <div class="bg-gradient-to-r from-bilibili-pink to-bilibili-blue h-1.5 rounded-full" style="width: 33.33333333333333%"></div>
+                        </div>
+                    </div>
+                </div><div class="flex items-center p-3 border-b border-bilibili-border last:border-b-0 transition-all hover:bg-gray-50">
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-white bg-gray-200 font-bold text-sm">
+                        7
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <div class="font-medium"> 生活</div>
+                            <div class="text-bilibili-gray text-sm">4次</div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1.5">
+                            <div class="bg-gradient-to-r from-bilibili-pink to-bilibili-blue h-1.5 rounded-full" style="width: 26.666666666666668%"></div>
+                        </div>
+                    </div>
+                </div><div class="flex items-center p-3 border-b border-bilibili-border last:border-b-0 transition-all hover:bg-gray-50">
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-white bg-gray-200 font-bold text-sm">
+                        8
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <div class="font-medium"> 美国</div>
+                            <div class="text-bilibili-gray text-sm">4次</div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1.5">
+                            <div class="bg-gradient-to-r from-bilibili-pink to-bilibili-blue h-1.5 rounded-full" style="width: 26.666666666666668%"></div>
+                        </div>
+                    </div>
+                </div><div class="flex items-center p-3 border-b border-bilibili-border last:border-b-0 transition-all hover:bg-gray-50">
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-white bg-gray-200 font-bold text-sm">
+                        9
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <div class="font-medium"> 游戏</div>
+                            <div class="text-bilibili-gray text-sm">4次</div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1.5">
+                            <div class="bg-gradient-to-r from-bilibili-pink to-bilibili-blue h-1.5 rounded-full" style="width: 26.666666666666668%"></div>
+                        </div>
+                    </div>
+                </div><div class="flex items-center p-3 border-b border-bilibili-border last:border-b-0 transition-all hover:bg-gray-50">
+                    <div class="w-6 h-6 rounded-full flex items-center justify-center text-white bg-gray-200 font-bold text-sm">
+                        10
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <div class="font-medium"> 科普</div>
+                            <div class="text-bilibili-gray text-sm">4次</div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1.5">
+                            <div class="bg-gradient-to-r from-bilibili-pink to-bilibili-blue h-1.5 rounded-full" style="width: 26.666666666666668%"></div>
+                        </div>
+                    </div>
+                </div></div>
+          
+        </div>
+      </div>
+
+      
             
 
-            <div class="border-t border-gray-800 mt-6 pt-6 text-center text-gray-400 text-sm">
-                &copy; 2025 B站数据可视化平台 
-            </div>
+
+
+      
+      
+      <!-- 标签云 -->
+      <div class="lg:col-span-1 bg-white rounded-xl p-6 card-shadow">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-dark">热门标签</h2>
+          <button class="text-gray-400 hover:text-gray-600">
+            <i class="fa fa-refresh"></i>
+          </button>
         </div>
-    </footer>
+        <div class="h-80">
+            <img src="./myplot.png"  alt="">
+          <div id="tag-cloud" class="w-full h-full"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 互动数据图表 -->
+    <section class="mb-8">
+      <div class="bg-white rounded-xl p-6 card-shadow">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-dark">互动数据分析</h2>
+          <div class="flex space-x-2">
+            <button class="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">播放量</button>
+            <button class="px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 transition-colors">点赞量</button>
+            <button class="px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 transition-colors">评论量</button>
+          </div>
+        </div>
+        <div class="h-80">
+          <div id="engagement-chart" class="w-full h-full"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 视频列表 -->
+   <!-- 视频列表 -->
+<section class="mb-8">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-xl font-bold text-dark">热门视频</h2>
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-2">
+        <span class="text-gray-500">排序:</span>
+        <select id="sort-select" class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+          <option value="views">播放量</option>
+          <option value="likes">点赞量</option>
+          <option value="comments">评论量</option>
+          <option value="time">发布时间</option>
+        </select>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span class="text-gray-500">每页:</span>
+        <select id="page-size" class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white rounded-xl p-6 card-shadow">
+    <div id="videos-list" class="divide-y divide-gray-100">
+      <!-- 视频列表将动态加载 -->
+    </div>
+    
+    <!-- 分页 -->
+    <div class="flex justify-between items-center mt-8 pt-4 border-t border-gray-100">
+      <div class="text-sm text-gray-500">
+        显示 <span id="showing-start">1</span>-<span id="showing-end">10</span> 条，共 <span id="total-videos-count">0</span> 条
+      </div>
+      <div class="flex items-center space-x-1" id="pagination">
+        <button id="prev-page" class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 text-gray-400 hover:bg-gray-50 disabled:opacity-50" disabled>
+          <i class="fa fa-angle-left"></i>
+        </button>
+        <button class="w-10 h-10 flex items-center justify-center rounded-lg bg-primary text-white">1</button>
+        <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-50">2</button>
+        <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-50">3</button>
+        <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-50">4</button>
+        <button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-50">5</button>
+        <button id="next-page" class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">
+          <i class="fa fa-angle-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-white border-t border-gray-200 py-6">
+    <div class="container mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <div class="flex items-center space-x-2">
+            <i class="fa fa-play-circle text-primary text-xl"></i>
+            <span class="text-lg font-bold text-dark">Bilibili数据分析</span>
+          </div>
+          <p class="text-gray-500 text-sm mt-2">基于ECharts的数据可视化平台</p>
+        </div>
+        <div class="flex space-x-6">
+          <a href="#" class="text-gray-400 hover:text-primary transition-colors">
+            <i class="fa fa-github text-xl"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-primary transition-colors">
+            <i class="fa fa-twitter text-xl"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-primary transition-colors">
+            <i class="fa fa-linkedin text-xl"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-primary transition-colors">
+            <i class="fa fa-envelope text-xl"></i>
+          </a>
+        </div>
+      </div>
+      <div class="border-t border-gray-100 mt-6 pt-6 text-center text-gray-500 text-sm">
+        &copy; 2025 Bilibili数据分析平台. 保留所有权利.
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript -->
+  <script>
+    // 搜索框交互
+    document.getElementById('search-btn').addEventListener('click', function() {
+      const mobileSearch = document.getElementById('mobile-search');
+      mobileSearch.classList.toggle('hidden');
+      if (!mobileSearch.classList.contains('hidden')) {
+        mobileSearch.querySelector('input').focus();
+      }
+    });
+
+    // 页面滚动时导航栏样式变化
+    window.addEventListener('scroll', function() {
+      const header = document.querySelector('header');
+      if (window.scrollY > 10) {
+        header.classList.add('py-2');
+        header.classList.add('shadow-lg');
+      } else {
+        header.classList.remove('py-2');
+        header.classList.remove('shadow-lg');
+      }
+    });
+
+    // 初始化ECharts图表
+    const viewsDistributionChart = echarts.init(document.getElementById('views-distribution'));
+    const timeDistributionChart = echarts.init(document.getElementById('time-distribution'));
+    const engagementChart = echarts.init(document.getElementById('engagement-chart'));
+    const tagCloudChart = echarts.init(document.getElementById('tag-cloud'));
+
+    // 获取统计数据
+    fetch('http://127.0.0.1:5000/api/stats')
+      .then(response => response.json())
+      .then(data => {
+        // 更新统计卡片
+        document.getElementById('total-videos').textContent = data.total_videos.toLocaleString();
+        document.getElementById('total-views').textContent = data.total_views.toLocaleString();
+        document.getElementById('total-likes').textContent = data.total_likes.toLocaleString();
+        document.getElementById('active-ups').textContent = data.top_ups.length;
+        document.getElementById('total-videos-count').textContent = data.total_videos.toLocaleString();
+
+        // 渲染热门UP主
+        const topUpsContainer = document.getElementById('top-ups');
+        data.top_ups.forEach((up, index) => {
+          const rankClass = ['bg-primary', 'bg-gray-400', 'bg-amber-500'][index] || 'bg-gray-300';
+          const rankTextClass = ['text-white', 'text-white', 'text-white'][index] || 'text-gray-700';
+          
+          const upElement = document.createElement('div');
+          upElement.className = 'flex items-center';
+          upElement.innerHTML = `
+            <div class="w-8 h-8 rounded-full ${rankClass} flex items-center justify-center mr-3">
+              <span class="${rankTextClass} font-bold text-sm">${index + 1}</span>
+            </div>
+            <div class="flex-1">
+              <h4 class="font-medium text-dark">${up.up}</h4>
+              <p class="text-xs text-gray-500">平均播放量: ${Math.round(up.avg_views / 10000)}万</p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+              <i class="fa fa-user-circle text-gray-400 text-xl"></i>
+            </div>
+          `;
+          topUpsContainer.appendChild(upElement);
+        });
+
+        // 配置发布时间分布图表
+        const timeDistributionOptions = {
+          tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+              type: 'shadow'
+            }
+          },
+          grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '3%',
+            containLabel: true
+          },
+          xAxis: {
+            type: 'category',
+            data: data.time_distribution.map(item => item.hour + ':00'),
+            axisLabel: {
+              interval: 2
+            }
+          },
+          yAxis: {
+            type: 'value'
+          },
+          series: [{
+            name: '视频数量',
+            type: 'bar',
+            data: data.time_distribution.map(item => item.count),
+            color: '#FB7299'
+          }]
+        };
+        timeDistributionChart.setOption(timeDistributionOptions);
+      })
+      .catch(error => console.error('Error fetching stats:', error));
+
+    // 获取播放量分布数据
+    fetch('http://127.0.0.1:5000/api/chart/views_distribution')
+      .then(response => response.json())
+      .then(data => {
+        // 创建图片元素
+        const img = new Image();
+        img.src = data.image;
+        img.onload = function() {
+          // 配置播放量分布图表
+          const viewsDistributionOptions = {
+            tooltip: {
+              trigger: 'axis',
+              axisPointer: {
+                type: 'shadow'
+              }
+            },
+            grid: {
+              left: '3%',
+              right: '4%',
+              bottom: '3%',
+              containLabel: true
+            },
+            xAxis: {
+              type: 'value',
+              boundaryGap: [0, 0.01]
+            },
+            yAxis: {
+              type: 'category',
+              data: ['0-10万', '10-50万', '50-100万', '100-500万', '500万-1000万', '1000万以上']
+            },
+            series: [{
+              name: '视频数量',
+              type: 'bar',
+              data: [60, 40, 25, 15, 8, 2],
+              color: '#23ADE5'
+            }]
+          };
+          viewsDistributionChart.setOption(viewsDistributionOptions);
+        };
+      })
+      .catch(error => console.error('Error fetching views distribution:', error));
+
+    // 获取互动数据
+    fetch('http://127.0.0.1:5000/api/engagement')
+      .then(response => response.json())
+      .then(data => {
+        // 提取数据
+        const videos = data.slice(0, 10);
+        const names = videos.map(video => video.视频名称);
+        const views = videos.map(video => video.views);
+        const likes = videos.map(video => video.likes);
+        const coins = videos.map(video => video.coins);
+        const favorites = videos.map(video => video.favorites);
+        const danmaku = videos.map(video => video.danmaku);
+
+        // 配置互动数据图表
+        const engagementOptions = {
+          tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+              type: 'cross',
+              crossStyle: {
+                color: '#999'
+              }
+            }
+          },
+          legend: {
+            data: ['播放量', '点赞量', '硬币量', '收藏量', '弹幕量'],
+            top: 'bottom'
+          },
+          xAxis: {
+            type: 'category',
+            data: names,
+            axisLabel: {
+              interval: 0,
+              rotate: 45,
+              textStyle: {
+                fontSize: 10
+              }
+            }
+          },
+          yAxis: {
+            type: 'value'
+          },
+          series: [
+            {
+              name: '播放量',
+              type: 'bar',
+              data: views
+            },
+            {
+              name: '点赞量',
+              type: 'bar',
+              data: likes
+            },
+            {
+              name: '硬币量',
+              type: 'bar',
+              data: coins
+            },
+            {
+              name: '收藏量',
+              type: 'bar',
+              data: favorites
+            },
+            {
+              name: '弹幕量',
+              type: 'bar',
+              data: danmaku
+            }
+          ]
+        };
+        engagementChart.setOption(engagementOptions);
+      })
+      .catch(error => console.error('Error fetching engagement data:', error));
+
+    // 获取标签云数据
+    fetch('http://127.0.0.1:5000/api/tags')
+  .then(response => response.json())
+  .then(data => {
+    // 确保data是包含name和value的数组
+    const tagData = data.map(tag => ({ name: tag.name, value: tag.value })); // 假设后端字段为name和count
+    
+    const tagCloudOptions = {
+      series: [{
+        type: 'wordCloud',
+        gridSize: 20,
+        sizeRange: [12, 50],
+        rotationRange: [-90, 90],
+        shape: 'circle',
+        textStyle: {
+          normal: {
+            color: function() {
+              return `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
+            }
+          },
+          emphasis: {
+            shadowBlur: 10,
+            shadowColor: '#333'
+          }
+        },
+        data: tagData // 正确绑定数据
+      }]
+    };
+    tagCloudChart.setOption(tagCloudOptions);
+  })
+  .catch(error => {
+    console.error('标签数据获取失败:', error);
+    // 可在此处添加默认数据 fallback
+  });
+
+    // 获取视频列表
+    // 替换原有视频列表加载逻辑
+fetch('http://127.0.0.1:5000/api/videos')
+  .then(response => response.json())
+  .then(data => {
+    const videosList = document.getElementById('videos-list');
+    
+    // 渲染视频列表
+    data.videos.forEach(video => {
+      const videoElement = document.createElement('div');
+      videoElement.className = 'py-4 flex items-start hover:bg-gray-50 transition-colors';
+      videoElement.innerHTML = `
+        <div class="flex-shrink-0 w-40 h-22 rounded overflow-hidden">
+          <img src="https://picsum.photos/400/220?random=${video.视频ID}" alt="${video.视频名称}" class="w-full h-full object-cover">
+        </div>
+        <div class="ml-4 flex-1">
+          <h3 class="font-medium text-dark hover:text-primary transition-colors mb-1">
+            <a href="#">${video.视频名称}</a>
+          </h3>
+          <div class="flex items-center text-sm text-gray-500 mb-2">
+            <img src="https://picsum.photos/20/20?random=${video.UP主}" alt="${video.UP主}" class="w-4 h-4 rounded-full mr-1.5">
+            <span>${video.UP主}</span>
+          </div>
+          <div class="flex items-center text-xs text-gray-500">
+            <div class="flex items-center mr-4">
+              <i class="fa fa-eye mr-1"></i>
+              ${formatNumber(video.播放量)}
+            </div>
+            <div class="flex items-center mr-4">
+              <i class="fa fa-thumbs-up mr-1"></i>
+              ${formatNumber(video.点赞量)}
+            </div>
+            <div class="flex items-center">
+              <i class="fa fa-comment-o mr-1"></i>
+              ${formatNumber(video.评论量 || 0)}
+            </div>
+            <div class="ml-auto text-xs text-gray-400">
+              ${formatDate(video.发布时间)}
+            </div>
+          </div>
+        </div>
+      `;
+      videosList.appendChild(videoElement);
+    });
+  })
+  .catch(error => console.error('Error fetching videos:', error));
+
+  // 加载热门标签数据
+function loadTopTags() {
+  const topTagsContainer = document.getElementById('top-tags');
+  const loadingIndicator = document.getElementById('tag-loading');
+  const noTagsMessage = document.getElementById('no-tags');
+
+  topTagsContainer.innerHTML = '';
+  loadingIndicator.classList.remove('hidden');
+  noTagsMessage.classList.add('hidden');
+
+  fetch('http://127.0.0.1:5000/api/top_tags')
+    .then(response => response.json())
+    .then(data => {
+      if (data.length === 0) {
+        noTagsMessage.classList.remove('hidden');
+        return;
+      }
+
+      data.forEach((tag, index) => {
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between bg-gray-50 p-2 rounded-md hover:bg-gray-100 transition-colors';
+        
+        const badgeClass = `tag-badge tag-badge-level-${index % 3 + 1}`;
+        li.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <span class="${badgeClass}">${tag.name}</span>
+            <span class="tag-count">出现 ${tag.count} 次</span>
+          </div>
+          <div class="text-sm text-gray-500">
+            ${new Date(tag.last_used).toLocaleDateString('zh-CN')}
+          </div>
+        `;
+        topTagsContainer.appendChild(li);
+      });
+    })
+    .catch(error => {
+      console.error('获取热门标签失败:', error);
+      noTagsMessage.classList.remove('hidden');
+    })
+    .finally(() => {
+      loadingIndicator.classList.add('hidden');
+    });
+}
+
+// 绑定刷新事件
+document.getElementById('refresh-tags').addEventListener('click', loadTopTags);
+
+// 初始化加载
+loadTopTags();
 
 
 
-    <!-- 自定义脚本 -->
-    <script src="script.js"></script>
+// 新增排序和分页功能
+document.getElementById('sort-select').addEventListener('change', function() {
+  // 处理排序逻辑
+  console.log('排序方式:', this.value);
+  // 这里应该重新加载数据并更新列表
+});
+
+document.getElementById('page-size').addEventListener('change', function() {
+  // 处理每页显示数量逻辑
+  console.log('每页数量:', this.value);
+  // 这里应该重新加载数据并更新列表
+});
+
+// 分页按钮点击事件
+document.getElementById('prev-page').addEventListener('click', function() {
+  // 上一页逻辑
+  console.log('上一页');
+});
+
+document.getElementById('next-page').addEventListener('click', function() {
+  // 下一页逻辑
+  console.log('下一页');
+});
+
+    // 格式化数字
+    function formatNumber(num) {
+      if (num >= 100000000) {
+        return (num / 100000000).toFixed(1) + '亿';
+      } else if (num >= 10000) {
+        return (num / 10000).toFixed(1) + '万';
+      }
+      return num.toString();
+    }
+
+    // 格式化日期
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('zh-CN');
+    }
+
+    // 监听窗口大小变化，调整图表
+    window.addEventListener('resize', function() {
+      viewsDistributionChart.resize();
+      timeDistributionChart.resize();
+      engagementChart.resize();
+      tagCloudChart.resize();
+    });
+  </script>
+
+    
 </body>
-</html>
+</html>    
