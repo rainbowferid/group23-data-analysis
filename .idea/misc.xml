@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Black">
+<<<<<<< HEAD
     <option name="sdkName" value="Python 3.12 (pyenvironment)" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (pyenvironment)" project-jdk-type="Python SDK" />
+=======
+    <option name="sdkName" value="Python 3.12 (group23-data-analysis)" />
+  </component>
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (group23-data-analysis)" project-jdk-type="Python SDK" />
+>>>>>>> 7ee522c63fe1176beaa55c9e2911e1df5e584904
 </project>
