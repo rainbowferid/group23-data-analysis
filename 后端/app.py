@@ -99,9 +99,7 @@ def get_stats():
         GROUP BY hour
         ORDER BY hour
     """).fetchall()
-
     conn.close()
-
     return jsonify({
         'total_videos': total_videos,
         'total_views': total_views,
@@ -116,24 +114,48 @@ def get_stats():
 def get_engagement():
     conn = get_db_connection()
 
+    def parse_count(value):
+        if value is None:
+            return 0
+        value = value.strip()
+        if not value:
+            return 0
+        if value.endswith('万'):
+            return float(value[:-1]) * 10000
+        elif value.endswith('亿'):
+            return float(value[:-1]) * 100000000
+        else:
+            try:
+                return float(value)
+            except ValueError:
+                return 0
     # 获取播放量、点赞量、评论量等数据
     data = conn.execute("""
-        SELECT 
-            视频名称,
-            CAST(REPLACE(REPLACE(播放量, '万', '0000'), '亿', '00000000') AS INTEGER) as views,
-            CAST(REPLACE(REPLACE(点赞量, '万', '0000'), '亿', '00000000') AS INTEGER) as likes,
-            CAST(REPLACE(REPLACE(硬币量, '万', '0000'), '亿', '00000000') AS INTEGER) as coins,
-            CAST(REPLACE(REPLACE(收藏量, '万', '0000'), '亿', '00000000') AS INTEGER) as favorites,
-            CAST(REPLACE(REPLACE(弹幕量, '万', '0000'), '亿', '00000000') AS INTEGER) as danmaku
-        FROM rank_all
-        WHERE 播放量 NOT LIKE '%-%' AND 点赞量 NOT LIKE '%-%'
-        ORDER BY views DESC
-        LIMIT 20
-    """).fetchall()
+           SELECT 
+               视频名称,
+               播放量 as views,
+               点赞量 as likes,
+               硬币量 as coins,
+               收藏量 as favorites,
+               弹幕量 as danmaku
+           FROM rank_all
+           WHERE views NOT LIKE '%-%' AND likes NOT LIKE '%-%'
+           ORDER BY views DESC
+           LIMIT 20
+       """).fetchall()
+
+    processed_data = []
+    for item in data:
+        item_dict = dict(item)
+        for field in ['views', 'likes', 'coins', 'favorites', 'danmaku']:
+            item_dict[field] = parse_count(item_dict[field])
+        processed_data.append(item_dict)
 
     conn.close()
 
-    return jsonify([dict(item) for item in data])
+    conn.close()
+
+    return jsonify(processed_data)
 
 
 # 获取标签云数据
@@ -141,10 +163,8 @@ def get_engagement():
 def get_tags():
     conn = get_db_connection()
 
-    # 获取所有标签
     tags_data = conn.execute("SELECT 标签 FROM rank_all").fetchall()
 
-    # 处理标签数据
     tag_counts = {}
     for row in tags_data:
         tags = row['标签'].split(',') if row['标签'] else []

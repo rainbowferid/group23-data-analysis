@@ -2,11 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-<<<<<<< HEAD
-      <module fileurl="file://$PROJECT_DIR$/.idea/bilibili-data-analysis.iml" filepath="$PROJECT_DIR$/.idea/bilibili-data-analysis.iml" />
-=======
       <module fileurl="file://$PROJECT_DIR$/.idea/group23-data-analysis.iml" filepath="$PROJECT_DIR$/.idea/group23-data-analysis.iml" />
->>>>>>> 7ee522c63fe1176beaa55c9e2911e1df5e584904
     </modules>
   </component>
 </project>

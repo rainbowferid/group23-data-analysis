@@ -1,9 +1,7 @@
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 import pandas as pd
-
 url = 'https://www.bilibili.com/v/popular/rank/all'
-
 # 创建一个空的 DataFrame 用于存储数据
 data = {
     '视频名称': [],
@@ -16,11 +14,9 @@ data = {
     '弹幕量': [],
     '发布时间': [],
     '标签': [],
-
 }
 
 df = pd.DataFrame(data)
-cnt = 0
 with sync_playwright() as p:
     browser = p.firefox.launch(headless=True, slow_mo=100)
     context = browser.new_context()
@@ -31,8 +27,6 @@ with sync_playwright() as p:
     info = BeautifulSoup(blog, 'html.parser')
     select = info.select(
         '#app > div > div.rank-container > div.rank-list-wrap > ul > li > div > div.info')
-
-
 
     for video in select:
         video_name = video.find(class_='title').text
@@ -52,7 +46,6 @@ with sync_playwright() as p:
 
         blog = page.content()
         info = BeautifulSoup(blog, 'html.parser')
-
 
         pub_date = info.find(class_='pubdate-ip-text')
         if pub_date == None:

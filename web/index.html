@@ -266,7 +266,7 @@
       
       <div class="lg:col-span-1 bg-white rounded-xl p-6 card-shadow">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-xl font-bold text-dark">热门UP主</h2>
+          <h2 class="text-xl font-bold text-dark">标签排行榜</h2>
           <button class="text-gray-400 hover:text-gray-600">
             <i class="fa fa-refresh"></i>
           </button>
@@ -684,6 +684,8 @@
         const coins = videos.map(video => video.coins);
         const favorites = videos.map(video => video.favorites);
         const danmaku = videos.map(video => video.danmaku);
+        
+        console.log(likes)
 
         // 配置互动数据图表
         const engagementOptions = {
