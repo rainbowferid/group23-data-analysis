@@ -1,0 +1,29 @@
+@layer utilities {
+    .text-transparent {
+        color: rgb(0 0 0 / 0.7);
+    }
+    .content-auto {
+        content-visibility: auto;
+    }
+    .card-shadow {
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+    }
+    .gradient-bg {
+        background: linear-gradient(135deg, #FB7299 0%, #23ADE5 100%);
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    /* 图片区域样式 */
+    #featured-image {
+        transition: transform 0.3s ease;
+    }
+    #featured-image:hover {
+        transform: scale(1.02);
+    }
+}
